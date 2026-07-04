@@ -106,25 +106,15 @@ function checkPieceCapture(row, col, pieceVal) {
 
         while (r >= 0 && r < 8 && c >= 0 && c < 8) {
             let currentCell = boardState[r][c];
-
             if (currentCell !== 0) {
                 let isEnemy = isWhite ? (currentCell === 2 || currentCell === 22) : (currentCell === 1 || currentCell === 11);
-                
-                if (isEnemy && !enemyFound) {
-                    enemyFound = { row: r, col: c };
-                } else {
-                    break; 
-                }
+                if (isEnemy && !enemyFound) enemyFound = { row: r, col: c };
+                else break; 
             } else {
-                if (enemyFound) {
-                    return { targetRow: r, targetCol: c, jumpedRow: enemyFound.row, jumpedCol: enemyFound.col };
-                }
+                if (enemyFound) return { targetRow: r, targetCol: c, jumpedRow: enemyFound.row, jumpedCol: enemyFound.col };
             }
-
             if (!isKing && Math.abs(r - row) === 2) break; 
-            
-            r += dir.dr;
-            c += dir.dc;
+            r += dir.dr; c += dir.dc;
         }
     }
     return null;
@@ -158,7 +148,6 @@ function renderBoard() {
                 const piece = document.createElement('div');
                 piece.classList.add('piece');
                 piece.classList.add((pieceVal === 1 || pieceVal === 11) ? 'white-piece' : 'black-piece');
-                
                 if (pieceVal === 11 || pieceVal === 22) piece.innerHTML = '👑';
                 if (isChainJumping && selectedPiece && selectedPiece.row === row && selectedPiece.col === col) piece.classList.add('selected');
 
@@ -169,10 +158,7 @@ function renderBoard() {
                 });
                 cell.appendChild(piece);
             }
-
-            cell.addEventListener('click', () => {
-                if (currentTurn === 1) movePiece(row, col);
-            });
+            cell.addEventListener('click', () => { if (currentTurn === 1) movePiece(row, col); });
             boardElement.appendChild(cell);
         }
     }
@@ -192,12 +178,10 @@ function movePiece(targetRow, targetCol) {
     const fromRow = selectedPiece.row;
     const fromCol = selectedPiece.col;
     let pieceType = boardState[fromRow][fromCol];
-
     const rowDiff = targetRow - fromRow;
     const colDiff = targetCol - fromCol;
     let hasCaptured = false;
-    let jumpedRow = -1;
-    let jumpedCol = -1;
+    let jumpedRow = -1, jumpedCol = -1;
 
     const playerMustCapture = hasAnyCaptures(1);
     const isKing = (pieceType === 11);
@@ -205,75 +189,53 @@ function movePiece(targetRow, targetCol) {
     if (Math.abs(rowDiff) === Math.abs(colDiff)) {
         let dr = rowDiff > 0 ? 1 : -1;
         let dc = colDiff > 0 ? 1 : -1;
-        let r = fromRow + dr;
-        let c = fromCol + dc;
+        let r = fromRow + dr, c = fromCol + dc;
         let enemiesCount = 0;
-
         while (r !== targetRow && c !== targetCol) {
             if (boardState[r][c] !== 0) {
                 if (boardState[r][c] === 2 || boardState[r][c] === 22) {
                     enemiesCount++;
-                    jumpedRow = r;
-                    jumpedCol = c;
-                } else {
-                    enemiesCount = 99; 
-                }
+                    jumpedRow = r; jumpedCol = c;
+                } else enemiesCount = 99;
             }
-            r += dr;
-            c += dc;
+            r += dr; c += dc;
         }
-
-        if (!isKing && Math.abs(rowDiff) !== 2) {
-            if (enemiesCount === 1) return; 
-        }
-
+        if (!isKing && Math.abs(rowDiff) !== 2 && enemiesCount === 1) return;
         if (enemiesCount === 1) {
             boardState[jumpedRow][jumpedCol] = 0;
             hasCaptured = true;
             playerAte++;
             consecutiveKingMoves = 0;
-        } else if (enemiesCount > 1) {
-            return; 
-        }
+        } else if (enemiesCount > 1) return;
     }
 
     if (!hasCaptured) {
-        if (playerMustCapture) {
-            alert("Вы обязаны рубить!");
-            return;
-        }
+        if (playerMustCapture) { alert("Вы обязаны рубить!"); return; }
+        // ИСПРАВЛЕНИЕ: простая шашка не ходит назад
         if (Math.abs(rowDiff) === 1 && Math.abs(colDiff) === 1) {
-            if (!isKing && rowDiff > 0) return; 
-            
+            if (!isKing && rowDiff >= 0) { alert("Простые шашки не ходят назад!"); return; }
             if (isKing) {
                 let info = countKings();
                 if (info.pTotal === info.pKings && info.bTotal === info.bKings) consecutiveKingMoves++;
-            } else {
-                consecutiveKingMoves = 0;
-            }
+            } else consecutiveKingMoves = 0;
         } else if (isKing) {
             let dr = rowDiff > 0 ? 1 : -1;
             let dc = colDiff > 0 ? 1 : -1;
-            let r = fromRow + dr;
-            let c = fromCol + dc;
+            let r = fromRow + dr, c = fromCol + dc;
             while (r !== targetRow) {
-                if (boardState[r][c] !== 0) return; 
+                if (boardState[r][c] !== 0) return;
                 r += dr; c += dc;
             }
             let info = countKings();
             if (info.pTotal === info.pKings && info.bTotal === info.bKings) consecutiveKingMoves++;
-        } else {
-            return;
-        }
+        } else return;
     }
 
     if (!isKing && targetRow === 0) pieceType = 11;
-
     boardState[fromRow][fromCol] = 0;
     boardState[targetRow][targetCol] = pieceType;
 
     let nextCapture = checkPieceCapture(targetRow, targetCol, pieceType);
-
     if (hasCaptured && nextCapture) {
         isChainJumping = true;
         selectedPiece = { row: targetRow, col: targetCol, element: null };
@@ -284,13 +246,7 @@ function movePiece(targetRow, targetCol) {
         selectedPiece = null;
         updateStatsUI();
         renderBoard();
-
-        if (consecutiveKingMoves >= 15) {
-            alert("Ничья! 15 ходов дамок без взятия.");
-            backToMenu();
-            return;
-        }
-
+        if (consecutiveKingMoves >= 15) { alert("Ничья!"); backToMenu(); return; }
         currentTurn = 2;
         setTimeout(makeBotMove, 600);
     }
@@ -299,175 +255,101 @@ function movePiece(targetRow, targetCol) {
 function isMoveDangerous(fromRow, fromCol, toRow, toCol, currentVal) {
     let origFrom = boardState[fromRow][fromCol];
     let origTo = boardState[toRow][toCol];
-    
     boardState[fromRow][fromCol] = 0;
     boardState[toRow][toCol] = currentVal;
-
     let underAttack = false;
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             let val = boardState[r][c];
             if (val === 1 || val === 11) {
-                if (checkPieceCapture(r, c, val)) {
-                    underAttack = true;
-                    break;
-                }
+                if (checkPieceCapture(r, c, val)) { underAttack = true; break; }
             }
         }
         if (underAttack) break;
     }
-
     boardState[fromRow][fromCol] = origFrom;
     boardState[toRow][toCol] = origTo;
-
     return underAttack;
 }
 
 function makeBotMove() {
     if (currentTurn !== 2) return;
 
+    // ИСПРАВЛЕНИЕ: Проверка на проигрыш
+    let playerPieces = [];
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (boardState[r][c] === 1 || boardState[r][c] === 11) playerPieces.push({r, c});
+        }
+    }
+    if (playerPieces.length === 0) { alert("Вы проиграли!"); botWins++; backToMenu(); return; }
+
     let botPieces = [];
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             let val = boardState[r][c];
-            if (val === 2 || val === 22) botPieces.push({ row: r, col: c, val: val });
+            if (val === 2 || val === 22) botPieces.push({ row: r, c: c, val: val });
         }
     }
 
-    if (botPieces.length === 0) {
-        alert("Вы победили!");
-        playerWins++;
-        backToMenu();
-        return;
-    }
-
-    // 1. СБОР ВСЕХ ДОСТУПНЫХ ВАРИАНТОВ РУБКИ
     let captureMoves = [];
     for (let piece of botPieces) {
-        let capture = checkPieceCapture(piece.row, piece.col, piece.val);
+        let capture = checkPieceCapture(piece.row, piece.c, piece.val);
         if (capture) {
             let score = 0;
-            if (difficulty === 'hard' || difficulty === 'medium') {
-                if (!isMoveDangerous(piece.row, piece.col, capture.targetRow, capture.targetCol, piece.val)) {
-                    score += 100;
-                }
-            }
+            if (difficulty !== 'easy' && !isMoveDangerous(piece.row, piece.c, capture.targetRow, capture.targetCol, piece.val)) score += 100;
             captureMoves.push({ piece, capture, score });
         }
     }
 
     if (captureMoves.length > 0) {
-        if (difficulty !== 'easy') {
-            captureMoves.sort((a, b) => b.score - a.score);
-        }
-        let bestCapture = captureMoves[0];
-        let piece = bestCapture.piece;
-        let capture = bestCapture.capture;
-
-        let pType = boardState[piece.row][piece.col];
-        boardState[piece.row][piece.col] = 0;
-        boardState[capture.jumpedRow][capture.jumpedCol] = 0;
+        if (difficulty !== 'easy') captureMoves.sort((a, b) => b.score - a.score);
+        let best = captureMoves[0];
+        boardState[best.piece.row][best.piece.c] = 0;
+        boardState[best.capture.jumpedRow][best.capture.jumpedCol] = 0;
         botAte++;
-        consecutiveKingMoves = 0;
-
-        if (pType === 2 && capture.targetRow === 7) pType = 22;
-
-        boardState[capture.targetRow][capture.targetCol] = pType;
+        let pType = best.piece.val;
+        if (pType === 2 && best.capture.targetRow === 7) pType = 22;
+        boardState[best.capture.targetRow][best.capture.targetCol] = pType;
         updateStatsUI();
         renderBoard();
-
-        let nextCapture = checkPieceCapture(capture.targetRow, capture.targetCol, pType);
-        if (nextCapture) {
-            setTimeout(() => { continueBotChain(capture.targetRow, capture.targetCol); }, 600);
-        } else {
-            currentTurn = 1;
-        }
+        let next = checkPieceCapture(best.capture.targetRow, best.capture.targetCol, pType);
+        if (next) setTimeout(() => continueBotChain(best.capture.targetRow, best.capture.targetCol), 600);
+        else currentTurn = 1;
         return;
     }
 
-    // 2. ОБЫЧНЫЙ ТИХИЙ ХОД
     let validMoves = [];
     for (let piece of botPieces) {
-        let isKing = (piece.val === 22);
-        
-        // СТРОГОЕ ИСПРАВЛЕНИЕ: Обычные шашки бота ходят только вниз (dr: 1). Дамки ходят во все стороны.
         let directions = [{ dr: 1, dc: 1 }, { dr: 1, dc: -1 }];
-        if (isKing) {
-            directions.push({ dr: -1, dc: 1 }, { dr: -1, dc: -1 });
-        }
-
+        if (piece.val === 22) directions.push({ dr: -1, dc: 1 }, { dr: -1, dc: -1 });
         for (let dir of directions) {
-            let targetRow = piece.row + dir.dr;
-            let targetCol = piece.col + dir.dc;
-
-            while (targetRow >= 0 && targetRow < 8 && targetCol >= 0 && targetCol < 8) {
-                if (boardState[targetRow][targetCol] === 0) {
-                    let score = 0;
-                    
-                    if (difficulty === 'medium') {
-                        score += targetRow * 4; 
-                    }
-                    
-                    if (difficulty === 'hard') {
-                        score += targetRow * 15; 
-                        if (targetCol === 0 || targetCol === 7) score += 12; 
-                        if (piece.val === 2 && targetRow === 7) score += 999; 
-                    }
-
-                    validMoves.push({
-                        fromRow: piece.row, fromCol: piece.col,
-                        toRow: targetRow, toCol: targetCol, val: piece.val, score: score
-                    });
-                } else {
-                    break; 
-                }
-                if (!isKing) break; 
-                targetRow += dir.dr;
-                targetCol += dir.dc;
+            let tr = piece.row + dir.dr, tc = piece.c + dir.dc;
+            while (tr >= 0 && tr < 8 && tc >= 0 && tc < 8) {
+                if (boardState[tr][tc] === 0) {
+                    let score = (difficulty === 'hard') ? tr * 15 : tr * 4;
+                    validMoves.push({ fr: piece.row, fc: piece.c, tr, tc, val: piece.val, score });
+                } else break;
+                if (piece.val !== 22) break;
+                tr += dir.dr; tc += dir.dc;
             }
         }
     }
 
-    if (validMoves.length === 0) {
-        alert("У бота нет доступных ходов! Вы выиграли.");
-        playerWins++;
-        backToMenu();
-        return;
-    }
+    if (validMoves.length === 0) { alert("Вы выиграли!"); playerWins++; backToMenu(); return; }
 
-    // 3. УМНАЯ СОРТИРОВКА ТИХИХ ХОДОВ
-    if (difficulty === 'easy') {
-        validMoves.sort(() => Math.random() - 0.5);
-    } 
-    else {
-        let safeMoves = validMoves.filter(m => !isMoveDangerous(m.fromRow, m.fromCol, m.toRow, m.toCol, m.val));
-        if (safeMoves.length > 0) validMoves = safeMoves;
+    if (difficulty !== 'easy') {
+        let safe = validMoves.filter(m => !isMoveDangerous(m.fr, m.fc, m.tr, m.tc, m.val));
+        if (safe.length > 0) validMoves = safe;
         validMoves.sort((a, b) => b.score - a.score);
-    }
+    } else validMoves.sort(() => Math.random() - 0.5);
 
-    let finalMove = validMoves[0];
-    let finalType = finalMove.val;
-    if (finalType === 2 && finalMove.toRow === 7) finalType = 22; 
-
-    boardState[finalMove.fromRow][finalMove.fromCol] = 0;
-    boardState[finalMove.toRow][finalMove.toCol] = finalType;
-    
-    let info = countKings();
-    if (finalType === 22 && info.pTotal === info.pKings && info.bTotal === info.bKings) {
-        consecutiveKingMoves++;
-    } else {
-        consecutiveKingMoves = 0;
-    }
-
+    let mv = validMoves[0];
+    let fType = (mv.val === 2 && mv.tr === 7) ? 22 : mv.val;
+    boardState[mv.fr][mv.fc] = 0;
+    boardState[mv.tr][mv.tc] = fType;
     updateStatsUI();
     renderBoard();
-
-    if (consecutiveKingMoves >= 15) {
-        alert("Ничья! 15 ходов дамок без взятия.");
-        backToMenu();
-        return;
-    }
-
     currentTurn = 1;
 }
 
@@ -482,14 +364,8 @@ function continueBotChain(row, col) {
         boardState[capture.targetRow][capture.targetCol] = pType;
         updateStatsUI();
         renderBoard();
-
-        let nextCapture = checkPieceCapture(capture.targetRow, capture.targetCol, pType);
-        if (nextCapture) {
-            setTimeout(() => { continueBotChain(capture.targetRow, capture.targetCol); }, 600);
-        } else {
-            currentTurn = 1;
-        }
-    } else {
-        currentTurn = 1;
-    }
+        let next = checkPieceCapture(capture.targetRow, capture.targetCol, pType);
+        if (next) setTimeout(() => continueBotChain(capture.targetRow, capture.targetCol), 600);
+        else currentTurn = 1;
+    } else currentTurn = 1;
 }
