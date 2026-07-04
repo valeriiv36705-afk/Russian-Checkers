@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Русские шашки</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+    <!-- 1. СТАРТОВОЕ МЕНЮ -->
+    <div id="start-screen">
+        <h1 class="menu-title">РУССКИЕ ШАШКИ</h1>
+        <div id="scoreboard">
+            <div>Побед Игрока: <span id="win-player">0</span></div>
+            <div>Побед Бота: <span id="win-bot">0</span></div>
+        </div>
+        <div class="menu-section">
+            <p>Выберите сложность бота:</p>
+            <button id="btn-easy" class="active" onclick="changeDiff('easy')">Лёгкий</button>
+            <button id="btn-medium" onclick="changeDiff('medium')">Средний</button>
+            <button id="btn-hard" onclick="changeDiff('hard')">Хардкор</button>
+        </div>
+        <button id="start-game-btn" onclick="pressStartButton()">НАЧАТЬ ИГРУ 🎮</button>
+    </div>
+
+    <!-- 2. ИГРОВОЙ ЭКРАН (Теперь элементы создаются сразу!) -->
+    <div id="game-screen">
+        <!-- Панель со съеденными шашками -->
+        <div id="ingame-stats">
+            <div>Вы съели: <span id="stats-player-ate">0</span></div>
+            <div>Бот съел: <span id="stats-bot-ate">0</span></div>
+            <div>Ходов дамок: <span id="stats-draw-moves">0</span>/15</div>
+        </div>
+
+        <!-- Игровая доска -->
+        <div id="board"></div>
+
+        <!-- Кнопка Сдаться -->
+        <button id="surrender-btn" onclick="surrender()">Сдаться 🏳️</button>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html>
